@@ -11,23 +11,45 @@ import UIKit
 import Alamofire
 
 
-class AddHouse: UIViewController {
+class AddHouse: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate
+{
     
     var user = [JSON]()
     var houses = [String]()
     
+    var houseImages = ["Apartment", "Beach Cabin", "Beach House", "Cabin in the Woods", "Penthouse", "Winter Cabin"]
+    
+    var hImage = "Apartment"
+    
+    
+    @IBOutlet weak var picker: UIPickerView!
+    
     @IBOutlet var name: UITextField!
     
+    @IBOutlet weak var imageView: UIImageView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         
+        picker.delegate = self
+        picker.dataSource = self
+        
+        imageView.image = UIImage(named: "Apartment")
+        
+        let tap: UITapGestureRecognizer = UITapGestureRecognizer(target: self, action: "dismissKeyboard")
+        view.addGestureRecognizer(tap)
+
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+
+    func dismissKeyboard() {
+        //Causes the view (or one of its embedded text fields) to resign the first responder status.
+        view.endEditing(true)
     }
     
     @IBAction func addHouse(sender: AnyObject)
@@ -55,7 +77,7 @@ class AddHouse: UIViewController {
         let currentUser = self.user[0]
         let owner = String(currentUser["username"])
         
-        let parameters = ["name": String(name.text!), "owner": owner]
+        let parameters = ["name": String(name.text!), "owner": owner, "image": self.hImage]
         
         
         Alamofire.request(.POST, myURL, parameters: parameters)
@@ -64,11 +86,40 @@ class AddHouse: UIViewController {
                 
                 if(response!.statusCode != 400)
                 {
-                    self.displayMessage("A new house has been added!")
+                    let actionSheetController: UIAlertController = UIAlertController(title: "Alert", message: "A new house has been added", preferredStyle: .Alert)
                     
-                    self.performSegueWithIdentifier("toCollectionView", sender: self)
+                    
+                    let nextAction: UIAlertAction = UIAlertAction(title: "OK", style: .Default)
+                        { action -> Void in
+                            
+                            self.performSegueWithIdentifier("toCollectionView", sender: self)                            
+                    }
+                    
+                    actionSheetController.addAction(nextAction)
+                    
+                    
+                    self.presentViewController(actionSheetController, animated: true, completion: nil)
                 }
         }
+    }
+    
+    func numberOfComponentsInPickerView(pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return self.houseImages.count
+    }
+    
+    func pickerView(pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        
+        print(houseImages[row])
+        self.imageView.image = UIImage(named: String(houseImages[row]))
+        self.hImage = houseImages[row]
+    }
+    
+    func pickerView(pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return self.houseImages[row]
     }
     
     func displayMessage(message: String){
@@ -80,11 +131,14 @@ class AddHouse: UIViewController {
     
     
     override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-                if(segue.identifier == "toCollectionView")
-                {
-                    let dest = segue.destinationViewController as! HouseCollectionView
-                    dest.user = self.user
-                }
+        
+        if(segue.identifier == "toCollectionView")
+        {
+            let navDest = segue.destinationViewController as! UINavigationController
+                    
+            let dest = navDest.viewControllers.first as! HouseCollectionView
+            dest.user = self.user
+        }
     }
 }
 
