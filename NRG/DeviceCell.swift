@@ -10,8 +10,14 @@ import Foundation
 import UIKit
 
 class DeviceCell: UICollectionViewCell {
-
-    @IBOutlet weak var textDisplay: UITextView!
+    
+    var on : Bool!
+    
+    @IBOutlet weak var deviceName: UILabel!
+    
+    @IBOutlet weak var watts: UILabel!
+    
+    @IBOutlet weak var trigger: UISwitch!
     
     @IBOutlet weak var imageView: UIImageView!
 }

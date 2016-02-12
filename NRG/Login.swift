@@ -12,7 +12,7 @@ import Alamofire
 
 class Login: UIViewController {
     
-    var user = [JSON]()
+    var user : JSON!
     
     //fields for the login view
     @IBOutlet var usName: UITextField!
@@ -26,16 +26,40 @@ class Login: UIViewController {
         view.addGestureRecognizer(tap)
     }
     
+    override func viewWillAppear(animated: Bool) {
+        
+        if NSUserDefaults.standardUserDefaults().valueForKey("username") != nil
+        {
+            if(NSUserDefaults.standardUserDefaults().boolForKey("isUserLoggedIn"))
+            {
+                self.view.hidden = true
+                let tempString = String(NSUserDefaults.standardUserDefaults().valueForKey("username")!)
+                let tempPass = String(NSUserDefaults.standardUserDefaults().valueForKey("password")!)
+                
+                let tempUser = ["username" : tempString, "password" : tempPass]
+                self.user = JSON(tempUser)
+                
+                self.performSegueWithIdentifier("toLogin", sender: self)
+                
+                dispatch_async(dispatch_get_main_queue(), {
+                    self.performSegueWithIdentifier("toLogin", sender: self) })
+            }
+        }
+    }
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    
     
     //login Button
     @IBAction func loginAction(sender: AnyObject) {
         //grabs data that user input in the fields.
         let uName = String(usName.text!)
         let uPassword = String(usPassword.text!)
+        var confirmUser = true
         
         //If either field is empty, display alert.
         if(uName.isEmpty || uPassword.isEmpty)
@@ -43,9 +67,6 @@ class Login: UIViewController {
             self.displayAlertMessage("The fields are empty!")
             return
         }
-        let t = 2
-        
-        print(uName, " ", uPassword, t)
         
         let myURL = "http://172.249.231.197:1337/user/"
         
@@ -53,14 +74,19 @@ class Login: UIViewController {
         
         Alamofire.request(.GET, myURL, parameters: parameters)
             .responseJSON { response in
-                
                 if let JSON1 = response.result.value
                 {
                     for(_,usr) in JSON(JSON1)
                     {
                         if(String(usr["username"]) == uName && uPassword == String(usr["password"]))
                         {
-                            self.user.append(usr)
+                            self.user = usr
+                            
+                            NSUserDefaults.standardUserDefaults().setBool(true, forKey: "isUserLoggedIn");
+                            NSUserDefaults.standardUserDefaults().setValue(String(self.user["username"]), forKey: "username")
+                            NSUserDefaults.standardUserDefaults().setValue(String(self.user["password"]), forKey: "password")
+                            NSUserDefaults.standardUserDefaults().synchronize();
+                            confirmUser = false
                             self.performSegueWithIdentifier("toLogin", sender: self)
                         }
                         else
@@ -71,8 +97,8 @@ class Login: UIViewController {
                             }
                         }
                     }
-                    
-                    if(self.user.isEmpty)
+
+                    if(confirmUser)
                     {
                         dispatch_async(dispatch_get_main_queue())
                             {

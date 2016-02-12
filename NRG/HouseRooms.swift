@@ -13,8 +13,9 @@ import Alamofire
 class HouseRooms : UITableViewController
 {
     var rooms = [JSON]()
-    var user = [JSON]()
+    var user : JSON!
     var house = [JSON]()
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,7 +29,7 @@ class HouseRooms : UITableViewController
         
         self.rooms.removeAll()
 
-        let parameters  = ["owner" : String(self.user[0]["username"]), "house": String(self.house[0]["name"])]
+        let parameters  = ["owner" : String(self.user["username"]), "house": String(self.house[0]["name"])]
         
         Alamofire.request(.GET, "http://ignacio.kevinhuynh.net:1337/rooms/", parameters: parameters)
             .responseJSON { response in
@@ -61,8 +62,38 @@ class HouseRooms : UITableViewController
     
     override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCellWithIdentifier("cell", forIndexPath: indexPath) as UITableViewCell
+    
+        let myURL = "http://ignacio.kevinhuynh.net:1337/devices/"
         
-        cell.textLabel?.text = String(self.rooms[indexPath.row]["name"])
+        var counter : Double = 0
+        
+        let parameters = ["trigger" : "on", "room":String(self.rooms[indexPath.row]["name"]), "owner": String(self.user["username"]), "house": String(self.house[0]["name"])]
+        
+        Alamofire.request(.GET, myURL, parameters: parameters)
+            .responseJSON { response in
+                
+                if let JSON1 = response.result.value
+                {
+                    for(_,dev) in JSON(JSON1)
+                    {
+                        if let tempCount = Double(String(dev["watts"]))
+                        {
+                            counter += tempCount
+                        }
+                    }
+                    
+                    if(String(self.rooms[indexPath.row]) == "You have not added any rooms!")
+                    {
+                        cell.textLabel?.text = String(self.rooms[indexPath.row]["name"])
+                    }
+                    else
+                    {
+                        cell.textLabel?.text = "Watts:  " + String(counter) + " " + String(self.rooms[indexPath.row]["name"])
+                    }
+                    
+
+                }
+        }
         
         return cell
     }
@@ -108,17 +139,15 @@ class HouseRooms : UITableViewController
                 }
             }
             
-            
             let myURL = "http://172.249.231.197:1337/rooms/create?"
             
-            let owner = String(self.user[0]["username"])
+            let owner = String(self.user["username"])
             let cHouse = String(self.house[0]["name"])
             
             let parameters = ["name": String(rName!), "owner": owner, "house": cHouse]
 
             Alamofire.request(.POST, myURL, parameters: parameters)
                 .response { request, response, data, error in
-                    print("Response_-------\(response!.statusCode)")
                     
                     if(response!.statusCode != 400)
                     {
@@ -160,7 +189,7 @@ class HouseRooms : UITableViewController
 
             let dest = segue.destinationViewController as! DevicesCollection
             
-            dest.user = self.user[0]
+            dest.user = self.user
             dest.house = self.house[0]
             dest.room = self.rooms[indexPath.row]
         }
